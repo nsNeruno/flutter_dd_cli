@@ -126,10 +126,10 @@ class FlutterDDCLI {
           Constants.processClean,
         ],
       );
-      stdout.write(process.stdout,);
-      stderr.write(process.stderr,);
-      // process.stdout.transform(utf8.decoder,).forEach(print,);
-      // process.stderr.transform(utf8.decoder,).forEach(print,);
+      // stdout.write(process.stdout,);
+      // stderr.write(process.stderr,);
+      process.stdout.transform(utf8.decoder,).forEach(print,);
+      process.stderr.transform(utf8.decoder,).forEach(print,);
       await process.exitCode;
     }
     process = await Process.start(
@@ -140,10 +140,10 @@ class FlutterDDCLI {
         _buildVariantStrings[variant]!,
       ],
     );
-    stdout.write(process.stdout,);
-    stderr.write(process.stderr,);
-    // process.stdout.transform(utf8.decoder,).forEach(print,);
-    // process.stderr.transform(utf8.decoder,).forEach(print,);
+    // stdout.write(process.stdout,);
+    // stderr.write(process.stderr,);
+    process.stdout.transform(utf8.decoder,).forEach(print,);
+    process.stderr.transform(utf8.decoder,).forEach(print,);
     await process.exitCode;
   }
 
