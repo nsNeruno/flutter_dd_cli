@@ -71,7 +71,7 @@ class FlutterDDCLI {
     }
   }
 
-  Future<String> _generateDartDefines(GenerateFileType fileType, File file,) async {
+  Future<Iterable<String>> _generateDartDefines(GenerateFileType fileType, File file,) async {
     switch (fileType) {
       case GenerateFileType.json:
         final fileContent = await file.readAsString();
@@ -94,18 +94,20 @@ class FlutterDDCLI {
           (entry,) {
             return "--dart-define=${entry.key}=${entry.value}";
           },
-        ).join(" ",);
+        );
       case GenerateFileType.env:
         final regex = RegExp(r"^[\w\d_]+=\S+$",);
-        return file.openRead().transform(
+        final List<String> lines = [];
+        await file.openRead().transform(
           utf8.decoder,
         ).transform(
           const LineSplitter(),
         ).where(
           (line) => regex.hasMatch(line,),
-        ).map(
-          (line) => "--dart-define=$line",
-        ).join(" ",);
+        ).forEach(
+          (line) => lines.add("--dart-define=$line",),
+        );
+        return lines;
     }
   }
 
@@ -117,6 +119,7 @@ class FlutterDDCLI {
 
   Future<void> _performBuild(String platform, BuildVariant variant, {
     bool clean = false,
+    Iterable<String>? dartDefines,
   }) async {
     Process? process;
     if (clean) {
@@ -138,6 +141,8 @@ class FlutterDDCLI {
         Constants.processBuild,
         platform,
         _buildVariantStrings[variant]!,
+        if (dartDefines != null)
+          ...dartDefines,
       ],
     );
     // stdout.write(process.stdout,);
@@ -170,8 +175,9 @@ class FlutterDDCLI {
     final File file = _getFileFromPath(filePath,);
     final dartDefines = await _generateDartDefines(fileType, file,);
     if (type == CommandType.generate) {
+      print("Result:",);
       print(
-        dartDefines,
+        dartDefines.join(" ",),
       );
     } else if (type == CommandType.build) {
       final String? _platform = _findElementAt(3,);
@@ -196,7 +202,10 @@ class FlutterDDCLI {
       } else {
         variant = BuildVariant.release;
       }
-      await _performBuild(_platform, variant, clean: clean,);
+      await _performBuild(
+        _platform, variant,
+        clean: clean, dartDefines: dartDefines,
+      );
     }
   }
 
