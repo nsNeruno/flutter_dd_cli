@@ -44,17 +44,6 @@ class FlutterDDCLI {
     throw FallThroughError();
   }
 
-  BuildVariant? _getBuildVariant(String? arg,) {
-    switch (arg?.replaceAll("-", "",)) {
-      case Constants.buildVariantRelease:
-        return BuildVariant.release;
-      case Constants.buildVariantProfile:
-        return BuildVariant.profile;
-      case Constants.buildVariantDebug:
-        return BuildVariant.debug;
-    }
-  }
-
   File _getFileFromPath(String? arg,) {
     if (arg != null) {
       final file = File(arg,);
@@ -69,6 +58,7 @@ class FlutterDDCLI {
     if (index < _arguments.length) {
       return _arguments.elementAt(index,);
     }
+    return null;
   }
 
   Future<Iterable<String>> _generateDartDefines(GenerateFileType fileType, File file,) async {
@@ -120,6 +110,7 @@ class FlutterDDCLI {
   Future<void> _performBuild(String platform, BuildVariant variant, {
     bool clean = false,
     Iterable<String>? dartDefines,
+    String? obfuscateSplitPath,
   }) async {
     Process? process;
     if (clean) {
@@ -129,8 +120,6 @@ class FlutterDDCLI {
           Constants.processClean,
         ],
       );
-      // stdout.write(process.stdout,);
-      // stderr.write(process.stderr,);
       process.stdout.transform(utf8.decoder,).forEach(print,);
       process.stderr.transform(utf8.decoder,).forEach(print,);
       await process.exitCode;
@@ -141,12 +130,15 @@ class FlutterDDCLI {
         Constants.processBuild,
         platform,
         _buildVariantStrings[variant]!,
+        if (obfuscateSplitPath != null)
+          ...[
+            "--obfuscate",
+            "--split-debug-info=$obfuscateSplitPath",
+          ],
         if (dartDefines != null)
           ...dartDefines,
       ],
     );
-    // stdout.write(process.stdout,);
-    // stderr.write(process.stderr,);
     process.stdout.transform(utf8.decoder,).forEach(print,);
     process.stderr.transform(utf8.decoder,).forEach(print,);
     await process.exitCode;
@@ -175,7 +167,7 @@ class FlutterDDCLI {
     final File file = _getFileFromPath(filePath,);
     final dartDefines = await _generateDartDefines(fileType, file,);
     if (type == CommandType.generate) {
-      print("Result:",);
+      print("You may copy this into your next flutter build/run command:",);
       print(
         dartDefines.join(" ",),
       );
@@ -186,25 +178,41 @@ class FlutterDDCLI {
           "Unsupported Platform. Supported Platforms are ${Constants.supportedBuildPlatforms.join(", ",)}",
         );
       }
-      String? arg = _findElementAt(4,);
-      late final BuildVariant variant;
-      bool clean = false;
-      if (arg != null) {
-        variant = _getBuildVariant(arg,) ?? BuildVariant.release;
-        const cleanArg = "--clean";
-        if (arg == cleanArg) {
-          clean = true;
+      final Map<String, bool> additionalArgs = {};
+      String? obfuscationSplitPath;
+      const obfuscationKey = "--obfuscateSplitPath=";
+      if (_arguments.length >= 4) {
+        for (int i = 4; i <= _arguments.length - 1; i++) {
+          final arg = _findElementAt(i,);
+          if (arg != null && arg.startsWith("--",)) {
+            additionalArgs[arg] = true;
+            if (arg.startsWith(obfuscationKey)) {
+              obfuscationSplitPath = arg.replaceAll(obfuscationKey, "",);
+            }
+          }
         }
-        arg = _findElementAt(5,);
-        if (arg == cleanArg) {
-          clean = true;
-        }
-      } else {
-        variant = BuildVariant.release;
       }
+
+      final bool clean = additionalArgs["--clean"] == true;
+
+      final BuildVariant variant = () {
+        final mappedVariants = Map.fromEntries(
+          BuildVariant.values.map(
+            (e) => MapEntry("--${e.toString().split(".")[1]}", e),
+          ),
+        );
+        for (var entry in mappedVariants.entries) {
+          if (additionalArgs[entry.key] == true) {
+            return entry.value;
+          }
+        }
+        return BuildVariant.release;
+      }();
+
       await _performBuild(
         _platform, variant,
         clean: clean, dartDefines: dartDefines,
+        obfuscateSplitPath: obfuscationSplitPath,
       );
     }
   }

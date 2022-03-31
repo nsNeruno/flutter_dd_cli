@@ -1,3 +1,7 @@
+## 0.2.0
+
+- Added obfuscation argument
+
 ## 0.1.0
 
 - Fixed the build command not injecting the Dart Define arguments

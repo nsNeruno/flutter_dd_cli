@@ -34,13 +34,13 @@ $HOME/.pub-cache/bin
 Given the sample JSON File below with name ```env.json```
 ```json
 {
-    "log": true,
-    "apiKeyA": "NeverGonnaGiveYouUp",
-    "apiKeyB": "NeverGonnaLetYouDown",
-    "apiKeyC": "NeverGonnaRunAround",
-    "protocol": "and",
-    "baseUrl": "Deserts.You",
-    "port": 420
+  "log": true,
+  "apiKeyA": "NeverGonnaGiveYouUp",
+  "apiKeyB": "NeverGonnaLetYouDown",
+  "apiKeyC": "NeverGonnaRunAround",
+  "protocol": "and",
+  "baseUrl": "Deserts.You",
+  "port": 420
 }
 ```
 Assuming ```env.json``` is currently located at current working directory
@@ -94,6 +94,13 @@ fdd build json env.json appbundle --release --clean
 # Clean and defaults to --release
 fdd build json env.json appbundle --clean
 ```
+
+#### Flutter Obfuscation
+There is a Flutter command to obfuscate the Dart code using `--obfuscate --split-debug-info=...` which is optionally available by adding the parameter below.
+```
+--obfuscateSplitPath=</path_to/project_name/directory>
+```
+
 #### Outputs
 The generated build files are located at the same location defined by `flutter build` command.
 
